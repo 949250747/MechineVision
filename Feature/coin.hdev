@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hdevelop file_version="1.2" halcon_version="18.11.0.1">
+<procedure name="main">
+<interface/>
+<body>
+<l>areaMin:=50</l>
+<l>areaMax:=260</l>
+<l>PI:=3.141592</l>
+<l>read_image(Image, 'C:/Users/fanss/Desktop/test.BMP')</l>
+<l>get_image_size(Image,width,height)</l>
+<l>dev_open_window(0,0,width,width,'black',WindowHandle)</l>
+<c></c>
+<l>threshold (Image, Region, 115, 255)</l>
+<c></c>
+<l>connection (Region, ConnectedRegions)</l>
+<c></c>
+<l>select_shape(ConnectedRegions, BigRegions, 'area', 'and', areaMin*areaMin*PI, areaMax*areaMax*PI)</l>
+<l>select_shape(BigRegions,Circle,'circularity','and',0.8,1)</l>
+<c></c>
+<l>area_center (Circle, Area, Row, Column)</l>
+<c></c>
+<l>dev_display(Circle)</l>
+<c></c>
+<l>set_tposition (WindowHandle,50,50)</l>
+<l>write_string (WindowHandle,'Area is'+Area)</l>
+<l>set_tposition (WindowHandle,70,50)</l>
+<l>write_string (WindowHandle,'Row is'+Row)</l>
+<l>set_tposition (WindowHandle,90,50)</l>
+<l>write_string (WindowHandle,'Column is'+Column)</l>
+</body>
+<docu id="main">
+<parameters/>
+</docu>
+</procedure>
+</hdevelop>
