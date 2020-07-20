@@ -1,7 +1,12 @@
-ï»¿#include<iostream>
+#include<iostream>
 #include<opencv2/opencv.hpp>
 #include<opencv2/core/core.hpp>
+
 #define pi 3.141593
+const double ANGLE_ARANGE = 60;
+const double START_ANGLE = -30;
+const double DANGLE = 5;
+const double ANGLE_NUMBLE = ANGLE_ARANGE / DANGLE;
 
 using namespace cv;
 using namespace std;
@@ -10,21 +15,20 @@ void rotate_arbitrarily_angle(Mat& src, Mat& dst, float angle);
 void Image_Mean_Variance(Mat src);
 float NCC(int r, int c, Mat TemplateImage, Mat TargetImage, float TemplateMean, float TemplateVariance);
 float tempData[2] = { 0 };
-float Q_rsqrt(float number);
-float sqrt3(float x);
+float sqrt3(float x);		//¿ªÆ½·½¸ù¿ìËÙËã·¨
 
 int main(void)
 {
 	Mat tempImage[4], tarImage[4];
 
-	//è¯»å›¾
-	Mat temp = imread("C:/Users/fanss/Desktop/images/pattern.bmp");
-	Mat tar = imread("C:/Users/fanss/Desktop/images/IMAGEB15.bmp");
-	//è½¬ä¸ºç°åº¦å›¾
+	//¶ÁÍ¼
+	Mat temp = imread("../images/pattern.bmp");
+	Mat tar = imread("../images/IMAGEB23.bmp");
+	//×ªÎª»Ò¶ÈÍ¼
 	cvtColor(temp, tempImage[0], COLOR_BGR2GRAY);
 	cvtColor(tar, tarImage[0], COLOR_BGR2GRAY);
 
-	//é™é‡‡æ ·
+	//½µ²ÉÑù
 	pyrDown(tarImage[0], tarImage[1], Size(tarImage[0].cols / 2, tarImage[0].rows / 2));
 	pyrDown(tarImage[1], tarImage[2], Size(tarImage[1].cols / 2, tarImage[1].rows / 2));
 	pyrDown(tarImage[2], tarImage[3], Size(tarImage[2].cols / 2, tarImage[2].rows / 2));
@@ -35,14 +39,17 @@ int main(void)
 
 	int maxRow = 0, maxCol = 0;
 	float maxNCC = 0, ncc = 0, maxAngle = 0;
-	Mat tempRotate;
-	
+	Mat tempRotate;		//Ğı×ªÖ®ºóµÄÍ¼Ïñ
+
 	double start = static_cast<double>(getTickCount());
 
-	for (int i = 0; i < 18; i++) {
-		rotate_arbitrarily_angle(tempImage[3], tempRotate, i * 20);
+	/* ÏÈËã½ğ×ÖËş¶¥¶Ë */
+	for (int i = 0; i < ANGLE_NUMBLE; i++) {
+		//Ğı×ªÄ£°å
+		rotate_arbitrarily_angle(tempImage[3], tempRotate, i * DANGLE);
+		//ÇóÄ£°å¾ùÖµºÍ·½²î
 		Image_Mean_Variance(tempRotate);
-		//cout << tempData[0] << "   " << tempData[1] << endl;
+		//Çó(r,c)NCCÖµ
 		for (int r = 0; r < tarImage[3].rows - tempRotate.rows; r++) {
 			for (int c = 0; c < tarImage[3].cols - tempRotate.cols; c++) {
 				ncc = NCC(r, c, tempRotate, tarImage[3], tempData[0], tempData[1]);
@@ -50,14 +57,14 @@ int main(void)
 					maxNCC = ncc;
 					maxRow = r;
 					maxCol = c;
-					maxAngle = i * 20;
+					maxAngle = i * DANGLE;
 				}
 			}
-		}		
+		}
 	}
-	cout << maxCol << "           " << maxRow <<"        "<<maxAngle<< endl;
-	
-	float maxAngletemp, step = 20;
+	/* ÔÚÒÀ´ÎÍùÉÏ×ß */
+	//ºóÃæ¼Ótemp¶¼ÊÇÔİ´æÁ¿
+	float maxAngletemp, step = DANGLE;
 	int maxRowtemp, maxColtemp;
 	for (int t = 2; t >= 0; t--)
 	{
@@ -68,33 +75,36 @@ int main(void)
 		maxRowtemp = maxRow;
 		maxColtemp = maxCol;
 		step /= 5;
-		for (int i = -3; i < 4; i++) {
-			rotate_arbitrarily_angle(tempImage[t], tempRotate, maxAngle + i * step);
-			//cout << i << "    ";
-			Image_Mean_Variance(tempRotate);
-			//cout << *tempData << "   " << *(tempData + 2) << endl;
-			for (int r = -3; r < 1; r++) {
-				//cout << r << endl;
-				for (int c = -3; c < 1; c++) {
-					//cout << maxRow * 2 << endl;
-					ncc = NCC(maxRowtemp + r, maxColtemp + c, tempRotate, tarImage[t], tempData[0], tempData[1]);
-					if (ncc > maxNCC) {
-						maxNCC = ncc;
-						maxRow = maxRowtemp + r;
-						maxCol = maxColtemp + c;
-						maxAngle = maxAngletemp + i * step;
+
+		if (1)
+		{
+			for (int i = -4; i < 4; i++) {
+				rotate_arbitrarily_angle(tempImage[t], tempRotate, maxAngle + i * step);
+				//cout << i << "    ";
+				Image_Mean_Variance(tempRotate);
+				//cout << *tempData << "   " << *(tempData + 2) << endl;
+				for (int r = -1; r <= 1; r++) {
+					//cout << r << endl;
+					for (int c = -1; c <= 1; c++) {
+						//cout << maxRow * 2 << endl;
+						ncc = NCC(maxRowtemp + r, maxColtemp + c, tempRotate, tarImage[t], tempData[0], tempData[1]);
+						if (ncc > maxNCC) {
+							maxNCC = ncc;
+							maxRow = maxRowtemp + r;
+							maxCol = maxColtemp + c;
+							maxAngle = maxAngletemp + i * step;
+						}
 					}
 				}
 			}
 		}
-		cout << "åæ ‡(" << maxCol << "," << maxRow << ")   è§’åº¦" << maxAngle << endl;
+
 	}
-
+	cout << "×ø±ê(" << maxCol << "," << maxRow << ")   ½Ç¶È" << maxAngle << endl;
 	double time = ((double)getTickCount() - start) / getTickFrequency();
-	cout << "æ‰€ç”¨æ—¶é—´:" << time << "s" << endl;
+	cout << "ËùÓÃÊ±¼ä:" << time << "s" << endl;
 
-	
-
+	/* »­¾ØĞÎ */
 	int centerCol = maxCol + tempRotate.cols / 2, centerRow = maxRow + tempRotate.rows / 2;
 	float len = sqrt(tempImage[0].cols * tempImage[0].cols + tempImage[0].rows * tempImage[0].rows) / 2;
 	float theta0 = atan2f(tempImage[0].rows, tempImage[0].cols);
@@ -106,21 +116,24 @@ int main(void)
 	line(tarImage[0], Point(centerCol + len * cosf(phi1), centerRow - len * sinf(phi1)), Point(centerCol - len * cosf(phi2), centerRow - len * sinf(phi2)), Scalar(255, 0, 0), 2);
 	line(tarImage[0], Point(centerCol - len * cosf(phi2), centerRow - len * sinf(phi2)), Point(centerCol - len * cosf(phi1), centerRow + len * sinf(phi1)), Scalar(255, 0, 0), 2);
 
-	circle(tarImage[0], Point(centerCol,centerRow), 3, Scalar(255, 0, 0),-1);
+	circle(tarImage[0], Point(centerCol, centerRow), 3, Scalar(255, 0, 0), -1);	//¾ØĞÎÖĞĞÄµã
 
-	//rectangle(tarImage[1], Rect(maxCol, maxRow, tempRotate.cols, tempRotate.rows), Scalar(255, 0, 0));
-	imshow("1", tarImage[0]);
-	imshow("2", tempImage[0]);
+	imshow("result", tarImage[0]);
+	imshow("template", tempImage[0]);
+
+	Mat tempImage1;
+	rotate_arbitrarily_angle(temp, tempImage1, 20);
+	imshow("lalal", tempImage1);
 
 	waitKey(0);
 	return 0;
 }
 
-//æ±‚å›¾åƒçš„å‡å€¼å’Œæ–¹å·®
+//ÇóÍ¼ÏñµÄ¾ùÖµºÍ·½²î
 void Image_Mean_Variance(Mat src)
 {
-	int n = src.cols * src.rows;   //åƒç´ æ€»æ•°
-	//å‡å€¼
+	int n = src.cols * src.rows;   //ÏñËØ×ÜÊı
+	//¾ùÖµ
 	float mt = 0;
 	for (int r = 0; r < src.rows; r++) {
 		for (int c = 0; c < src.cols; c++) {
@@ -128,7 +141,7 @@ void Image_Mean_Variance(Mat src)
 		}
 	}
 	mt /= n;
-	//æ–¹å·®
+	//·½²î
 	float st2 = 0;
 	for (int r = 0; r < src.rows; r++) {
 		for (int c = 0; c < src.cols; c++) {
@@ -141,27 +154,29 @@ void Image_Mean_Variance(Mat src)
 	tempData[1] = st2;
 }
 
-//(r,c)çš„NCCå€¼
-float NCC(int r, int c, Mat TemplateImage, Mat TargetImage, float TemplateMean, float TemplateVariance) 
+//(r,c)µÄNCCÖµ
+float NCC(int r, int c, Mat TemplateImage, Mat TargetImage, float TemplateMean, float TemplateVariance)
 {
 	float NCC = 0, mf = 0, sf2 = 0;
 	int Num = TemplateImage.rows * TemplateImage.cols;
-	
+
 	if (r > TargetImage.rows - TemplateImage.rows || c > TargetImage.cols - TemplateImage.cols) {
 		return 0;
 	}
-	//è®¡ç®—(r,c)çš„mf
+	//¼ÆËã(r,c)µÄmf
 	for (int u = 0; u < TemplateImage.rows; u++) {
+		uchar* pTI = TargetImage.ptr<uchar>(r + u);
 		for (int v = 0; v < TemplateImage.cols; v++) {
-			mf += TargetImage.at<uchar>(r + u, c + v);
+			mf += pTI[c + v];
 		}
 	}
 	mf /= Num;
 
-	//è®¡ç®—(r,c)çš„sf2
+	//¼ÆËã(r,c)µÄsf2
 	for (int u = 0; u < TemplateImage.rows; u++) {
+		uchar* pTI = TargetImage.ptr<uchar>(r + u);
 		for (int v = 0; v < TemplateImage.cols; v++) {
-			sf2 += (TargetImage.at<uchar>(r + u, c + v) - mf) * (TargetImage.at<uchar>(r + u, c + v) - mf);
+			sf2 += (pTI[c + v] - mf) * (pTI[c + v] - mf);
 		}
 	}
 	sf2 /= Num;
@@ -170,39 +185,41 @@ float NCC(int r, int c, Mat TemplateImage, Mat TargetImage, float TemplateMean, 
 
 	float st = sqrt3(TemplateVariance);
 
-	//è®¡ç®—(r,c)çš„NCC
+	//¼ÆËã(r,c)µÄNCC
 	for (int u = 0; u < TemplateImage.rows; u++) {
+		uchar* pTempI = TemplateImage.ptr<uchar>(u);
+		uchar* pTargetI = TargetImage.ptr<uchar>(r + u);
 		for (int v = 0; v < TemplateImage.cols; v++) {
-			NCC += ((TemplateImage.at<uchar>(u, v) - TemplateMean) / st) * ((TargetImage.at<uchar>(u + r, v + c) - mf) / sf);
+			NCC += ((pTempI[v] - TemplateMean) / st) * ((pTargetI[v + c] - mf) / sf);
 		}
 	}
 	NCC /= Num;
 	return NCC;
 }
 
-//æ—‹è½¬å›¾åƒ
+//Ğı×ªÍ¼Ïñ
 void rotate_arbitrarily_angle(Mat& src, Mat& dst, float angle)
 {
 	float radian = (float)(angle / 180.0 * CV_PI);
 
-	//å¡«å……å›¾åƒ
-	int maxBorder = (int)(max(src.cols, src.rows) * 1.414); //å³ä¸ºsqrt(2)*max
+	//Ìî³äÍ¼Ïñ
+	int maxBorder = (int)(max(src.cols, src.rows) * 1.414); //¼´Îªsqrt(2)*max
 	int dx = (maxBorder - src.cols) / 2;
 	int dy = (maxBorder - src.rows) / 2;
 	copyMakeBorder(src, dst, dy, dy, dx, dx, BORDER_CONSTANT);
 
-	//æ—‹è½¬
+	//Ğı×ª
 	Point2f center((float)(dst.cols / 2), (float)(dst.rows / 2));
-	Mat affine_matrix = getRotationMatrix2D(center, angle, 1.0);//æ±‚å¾—æ—‹è½¬çŸ©é˜µ
+	Mat affine_matrix = getRotationMatrix2D(center, angle, 1.0);//ÇóµÃĞı×ª¾ØÕó
 	warpAffine(dst, dst, affine_matrix, dst.size());
 
-	//è®¡ç®—å›¾åƒæ—‹è½¬ä¹‹ååŒ…å«å›¾åƒçš„æœ€å¤§çš„çŸ©å½¢
+	//¼ÆËãÍ¼ÏñĞı×ªÖ®ºó°üº¬Í¼ÏñµÄ×î´óµÄ¾ØĞÎ
 	float sinVal = abs(sin(radian));
 	float cosVal = abs(cos(radian));
 	Size targetSize((int)(src.cols * cosVal + src.rows * sinVal),
 		(int)(src.cols * sinVal + src.rows * cosVal));
 
-	//å‰ªæ‰å¤šä½™è¾¹æ¡†
+	//¼ôµô¶àÓà±ß¿ò
 	int x = (dst.cols - targetSize.width) / 2;
 	int y = (dst.rows - targetSize.height) / 2;
 	Rect rect(x, y, targetSize.width, targetSize.height);
@@ -225,20 +242,20 @@ float Q_rsqrt(float number)
 
 #ifndef Q3_VM
 #ifdef __linux__
-	assert(!isnan(y)); // bk010122 - FPE?
+	assert(!isnan(y));
 #endif
 #endif
 	return y;
 }
 
-float sqrt3(float x) {
-	//floatååŠ fè½¬æ¢æˆdoubleç±»å‹
+/* ¿ªÆ½·½¸ù¿ìËÙËã·¨ */
+float sqrt3(float x)
+{
 	if (x == 0) return 0;
 	float result = x;
 	float xhalf = 0.5f * result;
 	int i = *(int*)&result;
 
-	// what the fuck? 
 	i = 0x5f3759df - (i >> 1);
 	result = *(float*)&i;
 	result = result * (1.5f - xhalf * result * result);
